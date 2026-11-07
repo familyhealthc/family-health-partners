@@ -1,0 +1,16 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import initSqlJs from 'sql.js';
+import {createStoreClass} from '../src/store-core.mjs';
+import {sqliteAdapter} from '../src/sqlite-browser.mjs';
+import {defaultRules} from '../src/defaults.mjs';
+import {decodeBackup} from '../src/browser-backend.mjs';
+import {toCSV} from '../src/csv.mjs';
+const SQL=await initSqlJs();
+function empty(){const Store=createStoreClass(sqliteAdapter(SQL));return new Store(':memory:');}
+function setup(){const s=empty();s.saveRules(defaultRules);s.saveEntity('partners',{id:'P1',name:'浏览器示例',region:'杭州',level:'natural',status:'active',joinedAt:'2026-01-01'});s.saveEntity('customers',{id:'B1',name:'买家',subjectId:'SB',role:'buyer',buyerType:'independent',partnerId:'P1',registrationVerified:true,qualificationApproved:true,publishedSkuCount:0,kaStoreCount:0,registeredAt:'2026-01-01'});s.saveEntity('customers',{id:'S1',name:'卖家',subjectId:'SS',role:'seller',buyerType:'independent',partnerId:'P1',registrationVerified:true,qualificationApproved:true,publishedSkuCount:10,kaStoreCount:0,registeredAt:'2026-01-01'});return s;}
+const order={id:'O1',buyerId:'B1',sellerId:'S1',goodsCents:100000,commissionCents:3000,commissionVerified:true,completedAt:'2026-01-03',status:'completed',category:'RX'};
+test('WASM SQLite运行与服务端相同的规则，同人双边默认仅拿买方30%',()=>{const s=setup();s.saveEntity('orders',order);s.reconcile();assert.equal(s.snapshot().summary.rewardsCents,35900);assert.equal(s.ledger().filter(x=>x.kind==='commission').length,1);assert.equal(s.reconcile().created,0);s.close();});
+test('WASM SQLite支持原子导入和只读预览，不污染正式账目',()=>{const s=setup(),csv=toCSV([{...order,goodsYuan:'1000.00',commissionYuan:'30',commissionVerified:'true'}],['id','buyerId','sellerId','goodsYuan','commissionYuan','commissionVerified','completedAt','status','category']);assert.equal(s.importPreview('orders',csv).valid,1);assert.equal(s.all('orders').length,0);assert.equal(s.commitImport('orders',csv).imported,1);assert.equal(s.commitImport('orders',csv).imported,0);s.close();});
+test('WASM SQLite在已付款后退款，保留历史并生成下期抵扣',()=>{const s=setup();s.saveEntity('orders',order);s.reconcile();const batch=s.createSettlement('2026-03-01');s.updateSettlement(batch.id,{action:'approve'});s.updateSettlement(batch.id,{action:'record_paid',reference:'DEMO-BANK'});s.saveEntity('refunds',{id:'R1',orderId:'O1',goodsCents:100000,commissionCents:3000,completedAt:'2026-03-02'});s.reconcile();assert.equal(s.snapshot().summary.paidCents,35900);assert.equal(s.snapshot().summary.unbatchedCents,-22900);s.close();});
+test('完整备份可恢复SQLite档案、规则与奖励，非法备份被拒绝',()=>{const s=setup();s.saveEntity('orders',order);s.reconcile();const data=Buffer.from(s.db.export()).toString('base64');const bytes=decodeBackup(JSON.stringify({application:'Family Health Partner Center',schemaVersion:1,database:data}));const Restored=createStoreClass(sqliteAdapter(SQL,bytes)),restored=new Restored(':memory:');assert.equal(restored.all('partners').length,1);assert.equal(restored.snapshot().summary.rewardsCents,35900);assert.equal(restored.reconcile().created,0);assert.throws(()=>decodeBackup('{}'));assert.throws(()=>decodeBackup(JSON.stringify({application:'Family Health Partner Center',schemaVersion:1,database:'YWJj'})));s.close();restored.close();});

@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>家家健康 · 合伙人中心</title><link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/styles.css"><script src="/app.js" defer></script></head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <button class="mobile-menu icon-button" id="menu-close" aria-label="关闭导航">×</button>
+      <a class="brand" href="#overview" aria-label="家家健康合伙人中心首页"><span class="brand-mark">F<span>·</span></span><span><strong>家家健康</strong><small>FAMILY HEALTH</small></span></a>
+      <div class="product-name">合伙人中心 <span>B2B</span></div>
+      <nav aria-label="主导航" id="navigation"></nav>
+      <div class="sidebar-bottom"><div class="local-dot"></div><div><strong>本机工作台</strong><small>业务数据保存在本机</small></div><span class="version">0.1</span></div>
+    </aside>
+    <main>
+      <header class="topbar"><button class="mobile-menu icon-button" aria-label="展开导航" id="menu-toggle">☰</button><div class="breadcrumb">工作空间 <span>/</span> <strong id="breadcrumb-current">业务概览</strong></div><div class="topbar-actions"><label class="workspace-picker"><span class="workspace-dot"></span><select id="workspace" aria-label="切换工作区"><option value="demo">演示工作区</option><option value="workspace">正式工作区</option></select></label><span class="avatar">管</span></div></header>
+      <div class="workspace-banner" id="workspace-banner"></div>
+      <div id="view" class="page-content" aria-live="polite"><div class="loading">正在打开工作台…</div></div>
+      <footer class="app-footer"><span>Family Health · 合伙人业务工作台</span><span id="sync-time">尚未核算</span></footer>
+    </main>
+  </div>
+  <dialog id="form-dialog"><form id="entity-form" method="dialog"><div class="dialog-header"><div><span class="eyebrow">FAMILY HEALTH</span><h2 id="dialog-title">新增档案</h2></div><button type="button" class="icon-button" id="dialog-close" aria-label="关闭">×</button></div><div id="dialog-fields" class="form-grid"></div><div id="form-error" class="form-error" role="alert"></div><div class="dialog-actions"><button type="button" class="button secondary" id="dialog-cancel">取消</button><button type="submit" class="button primary">保存档案</button></div></form></dialog>
+  <dialog id="detail-dialog"><div class="dialog-header"><h2 id="detail-title">明细</h2><button class="icon-button" id="detail-close" aria-label="关闭">×</button></div><div id="detail-content"></div></dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

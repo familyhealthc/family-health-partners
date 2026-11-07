@@ -1,0 +1,2 @@
+id,buyerId,sellerId,goodsYuan,commissionYuan,commissionVerified,completedAt,status,category
+QA-PREVIEW-001,C001,C002,1200.00,36.00,true,2026-10-01,completed,RX/OTC

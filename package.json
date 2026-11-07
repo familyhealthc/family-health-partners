@@ -1,0 +1,24 @@
+{
+  "name": "family-health-partner-center",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Family Health B2B 合伙人管理与奖励对账工作台",
+  "scripts": {
+    "dev": "node --disable-warning=ExperimentalWarning server.mjs",
+    "start": "node --disable-warning=ExperimentalWarning server.mjs",
+    "test": "node --disable-warning=ExperimentalWarning --test tests/*.test.mjs",
+    "check": "node --check server.mjs && node --check src/store-core.mjs && node --check src/browser-backend.mjs && node --check public/app.js",
+    "build": "node scripts/build-pages.mjs"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "@noble/hashes": "2.4.0",
+    "sql.js": "1.15.2"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

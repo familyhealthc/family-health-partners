@@ -1,0 +1,18 @@
+import {build} from 'esbuild';
+import {mkdir,readFile,writeFile,copyFile,rm} from 'node:fs/promises';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+const root=path.dirname(path.dirname(fileURLToPath(import.meta.url))),out=path.join(root,'docs');
+await rm(out,{recursive:true,force:true});
+await mkdir(out,{recursive:true});
+await build({entryPoints:[path.join(root,'src/pages-entry.mjs')],outfile:path.join(out,'app.js'),bundle:true,format:'esm',platform:'browser',target:['es2022'],minify:true,legalComments:'eof',external:['node:fs','node:crypto','node:path']});
+let html=await readFile(path.join(root,'public/index.html'),'utf8');
+html=html.replace('href="/favicon.svg"','href="./favicon.svg"').replace('href="/styles.css"','href="./styles.css"').replace('<script src="/app.js" defer></script>','<script type="module" src="./app.js"></script>');
+html=html.replace('本机工作台','浏览器工作台').replace('业务数据保存在本机','数据仅存当前浏览器').replace('value="workspace">正式工作区','value="workspace">我的工作区').replace('class="version">0.1','class="version">0.2');
+html=html.replace('name="color-scheme" content="light"','name="color-scheme" content="light"><meta name="description" content="家家健康 B2B 合伙人中心：客户归属、奖励核算、退款冲减与结算管理。数据保存在当前浏览器。"');
+await writeFile(path.join(out,'index.html'),html);
+for(const file of ['styles.css','favicon.svg'])await copyFile(path.join(root,'public',file),path.join(out,file));
+await copyFile(path.join(root,'node_modules/sql.js/dist/sql-wasm-browser.wasm'),path.join(out,'sql-wasm-browser.wasm'));
+await writeFile(path.join(out,'.nojekyll'),'');
+await writeFile(path.join(out,'THIRD-PARTY-NOTICES.txt'),await readFile(path.join(root,'node_modules/sql.js/LICENSE'),'utf8')+'\n\n'+await readFile(path.join(root,'node_modules/@noble/hashes/LICENSE'),'utf8'));
+console.log('GitHub Pages build ready: docs/');
