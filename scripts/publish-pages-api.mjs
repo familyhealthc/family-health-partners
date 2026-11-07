@@ -31,11 +31,21 @@ api('git/refs/heads/main','PATCH',{sha:commit.sha,force:false});
 // 导入由 API 创建的提交对象，让本地与远端保持同一历史。
 function importCommit(sha){
   const item=api('git/commits/'+sha);
+  try{execFileSync('git',['cat-file','-e',sha],{stdio:'ignore'});return item;}catch{}
   const headers=['tree '+item.tree.sha,...item.parents.map(p=>'parent '+p.sha),...['author','committer'].map(key=>{const v=item[key];return `${key} ${v.name} <${v.email}> ${Math.floor(Date.parse(v.date)/1000)} +0000`;})];
   let raw=headers.join('\n')+'\n\n'+item.message+'\n';
   if(item.verification?.signature&&item.verification?.payload){const [head,...tail]=item.verification.payload.split('\n\n');const signature=item.verification.signature.trimEnd().replaceAll('\n','\n ');raw=head+'\ngpgsig '+signature+'\n\n'+tail.join('\n\n');}
-  let imported=execFileSync('git',['hash-object','-t','commit','-w','--stdin'],{input:raw,encoding:'utf8'}).trim();
-  if(imported!==sha){raw=raw.endsWith('\n')?raw.slice(0,-1):raw+'\n';imported=execFileSync('git',['hash-object','-t','commit','-w','--stdin'],{input:raw,encoding:'utf8'}).trim();}
+  let imported;
+  // REST日期规范化为UTC，Contents API创建的提交可能保留账号时区。
+  for(let offset=-720;offset<=840&&imported!==sha;offset+=15){
+    const absolute=Math.abs(offset),zone=(offset<0?'-':'+')+String(Math.floor(absolute/60)).padStart(2,'0')+String(absolute%60).padStart(2,'0');
+    const header=headers.join('\n').replace(/ \+0000(?=\n|$)/g,' '+zone);
+    for(const ending of ['', '\n']){
+      const candidate=item.verification?.signature?raw:header+'\n\n'+item.message+ending;
+      const hash=execFileSync('git',['hash-object','-t','commit','--stdin'],{input:candidate,encoding:'utf8'}).trim();
+      if(hash===sha){imported=hash;execFileSync('git',['hash-object','-t','commit','-w','--stdin'],{input:candidate});break;}
+    }
+  }
   if(imported!==sha)throw new Error('远端已发布，但本地提交对象校验未通过');
   return item;
 }
